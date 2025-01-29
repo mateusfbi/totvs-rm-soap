@@ -1,0 +1,23 @@
+{
+    "name": "mateusfbi/totvs-rm-soap",
+    "description": "Conexão SOAP para integração com TOTVS RM",
+    "keywords": ["soap", "totvs", "rm"],
+    "license": "MIT",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Mateus Brandao",
+            "email": "mateusfbi@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^8.0",
+        "vlucas/phpdotenv": "^5.6",
+        "spatie/array-to-xml": "^3.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "TotvsRmSoap\\": "src/"
+        }
+    }
+}
