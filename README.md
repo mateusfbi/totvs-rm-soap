@@ -4,7 +4,7 @@ Este projeto é uma implementação em PHP para integração com o serviço SOAP
 
 ## Requisitos
 
-- PHP 7.4 ou superior
+- PHP 8.0 ou superior
 - Extensão SOAP,XML do PHP
 - Composer
 
