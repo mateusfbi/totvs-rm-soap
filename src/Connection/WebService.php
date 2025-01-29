@@ -10,7 +10,8 @@ class WebService
 
     public function __construct()
     {
-        $dotenv = Dotenv::createUnsafeImmutable(__DIR__."/../../");
+
+        $dotenv = Dotenv::createImmutable(__DIR__."/../../");
         $dotenv->load();
     }
 
@@ -23,9 +24,9 @@ class WebService
     {
         try {
 
-            $connection = new SoapClient(getenv('WS_URL'). $path, [
-                    'login'                 => getenv('WS_USER'),
-                    'password'              => getenv('WS_PASS'),
+            $connection = new SoapClient($_ENV['WS_URL']. $path, [
+                    'login'                 => $_ENV['WS_USER'],
+                    'password'              => $_ENV['WS_PASS'],
                     'authentication'        => SOAP_AUTHENTICATION_BASIC,
                     'soap_version'          => SOAP_1_1,
                     'trace'                 => 1,
