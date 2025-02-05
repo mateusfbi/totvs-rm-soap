@@ -53,7 +53,7 @@ class ConsultaSQL
      * @return void
      */
 
-    public function setparametros(array $params = []): void
+    public function setParametros(array $params = []): void
     {
         $array = [];
 
@@ -72,7 +72,7 @@ class ConsultaSQL
      * @return array
      */
 
-    public function execute(): array
+    public function RealizarConsultaSQL(): array
     {
         try {
 

@@ -56,6 +56,7 @@ class Process
     {
         $this->execId = $execId;
     }
+
     /**
      * @return int
      */
@@ -78,7 +79,30 @@ class Process
 
         return $return;
     }
-    
+
+    /**
+     * @return int
+     */
+
+    public function ExecuteWithParams(): int
+    {
+
+        try {
+
+            $execute = $this->connection->ExecuteWithParams([
+                'ProcessServerName' => $this->process,
+                'strXmlParams'      => $this->xml
+            ]);
+
+            $return = $execute->ExecuteWithParamsResult;
+
+        } catch (\Exception $e) {
+            echo $e->getMessage() . PHP_EOL;
+        }
+
+        return $return;
+    }
+
     public function getProcessStatus(): int
     {
 

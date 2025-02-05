@@ -11,43 +11,41 @@ class WebService
     public function __construct()
     {
 
-        $dotenv = Dotenv::createImmutable(__DIR__."/../../");
+        $dotenv = Dotenv::createImmutable(__DIR__ . "/../../");
         $dotenv->load();
     }
 
-   /**
+    /**
      * @param string $path
      * @return SoapClient
      */
 
-    public function getClient(string $path) : SoapClient
+    public function getClient(string $path): SoapClient
     {
         try {
 
-            $connection = new SoapClient($_ENV['WS_URL']. $path, [
-                    'login'                 => $_ENV['WS_USER'],
-                    'password'              => $_ENV['WS_PASS'],
-                    'authentication'        => SOAP_AUTHENTICATION_BASIC,
-                    'soap_version'          => SOAP_1_1,
-                    'trace'                 => 1,
-                    'excepitions'           => 0,
-                    "stream_context" => stream_context_create(
-                        [
+            $connection = new SoapClient($_ENV['WS_URL'] . $path, [
+                'login'                 => $_ENV['WS_USER'],
+                'password'              => $_ENV['WS_PASS'],
+                'authentication'        => SOAP_AUTHENTICATION_BASIC,
+                'soap_version'          => SOAP_1_1,
+                'trace'                 => 1,
+                'excepitions'           => 0,
+                "stream_context" => stream_context_create(
+                    [
                         'ssl' => [
-                                'verify_peer'       => false,
-                                'verify_peer_name'  => false,
-                                'allow_self_signed' => true
+                            'verify_peer'       => false,
+                            'verify_peer_name'  => false,
+                            'allow_self_signed' => true
                         ]
-                        ]
-                    )
-                ]);
-
+                    ]
+                )
+            ]);
         } catch (\Exception $e) {
-            echo '<h2 style="color:red;"><br /><br /> Erro: Não foi possival conectar ao servidor do RM.' .' - '.getenv('WS_URL'). '<br /></h2>'. $e->getMessage() . PHP_EOL;
+            echo '<h2 style="color:red;"><br /><br /> Erro: Não foi possival conectar ao servidor do RM.' . ' - ' . getenv('WS_URL') . '<br /></h2>' . $e->getMessage() . PHP_EOL;
             exit;
         }
 
         return $connection;
     }
-
 }

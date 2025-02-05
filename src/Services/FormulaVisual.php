@@ -46,7 +46,6 @@ class FormulaVisual
      {
          $this->contexto = $contexto;
      }
- 
 
     /**
      * @param string $xml
