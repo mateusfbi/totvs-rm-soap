@@ -4,69 +4,96 @@ namespace TotvsRmSoap\Services;
 
 use TotvsRmSoap\Connection\WebService;
 
+/**
+ * Classe FormulaVisual
+ *
+ * Responsável por executar fórmulas visuais por meio do serviço SOAP da Totvs RM.
+ * Essa classe configura os parâmetros necessários (como a fórmula, coligada, contexto e XML de parâmetros),
+ * invoca o serviço SOAP e retorna o resultado da execução.
+ *
+ * @package TotvsRmSoap\Services
+ */
 class FormulaVisual
 {
+    private $webService;
     private string $idFormula;
     private string $coligada;
     private string $contexto;
     private string $paramXML;
-    private $connection;
 
-    public function __construct(WebService $ws)
+    /**
+     * Construtor da FormulaVisual.
+     *
+     * Inicializa o cliente SOAP configurado para se comunicar com o endpoint
+     * necessário para a execução de fórmulas visuais.
+     *
+     * @param WebService $webService Instância do serviço web utilizada para obter o cliente SOAP.
+     */
+    public function __construct(WebService $webService)
     {
-        $this->connection = $ws->getClient('/wsFormulaVisual/MEX?wsdl');
+        $this->webService = $webService->getClient('/wsFormulaVisual/MEX?wsdl');
     }
 
     /**
-     * @param string $idFormula
+     * Define a fórmula a ser executada.
+     *
+     * @param string $idFormula Identificador da fórmula.
      * @return void
      */
-
     public function setFormula(string $idFormula): void
     {
         $this->idFormula = $idFormula;
     }
 
     /**
-     * @param int $coligada
+     * Define o código da coligada para a execução.
+     *
+     * @param int $coligada Código da coligada.
      * @return void
      */
-
      public function setColigada(int $coligada): void
      {
          $this->coligada = $coligada;
      }
 
     /**
-     * @param string $contexto
+     * Define o contexto que será utilizado na execução da fórmula.
+     *
+     * Geralmente, o contexto pode incluir informações como usuário, sistema, coligada, etc.
+     *
+     * @param string $contexto Contexto da execução.
      * @return void
      */
-
      public function setContexto(string $contexto): void
      {
          $this->contexto = $contexto;
      }
 
     /**
-     * @param string $xml
+     * Define os parâmetros da execução em formato XML.
+     *
+     * @param string $paramXML XML contendo os parâmetros para a execução da fórmula.
      * @return void
      */
-
     public function setParametersXML(string $paramXML): void
     {
         $this->paramXML = $paramXML;
     }
 
     /**
-     * @return int
+     * Executa a fórmula visual via serviço SOAP.
+     *
+     * Monta a requisição SOAP com os parâmetros configurados e invoca o método Execute do endpoint.
+     * Em caso de sucesso, retorna o resultado da execução. Em caso de erro, imprime a mensagem de exceção.
+     *
+     * @return int Resultado retornado pela execução da fórmula.
      */
-
     public function execute(): int
     {
 
         try {
 
-            $execute = $this->connection->Execute([
+            $execute = $this->webService->Execute([
 
                 'codColigada' => $this->coligada,
                 'idFormula' => $this->idFormula,
@@ -85,6 +112,4 @@ class FormulaVisual
 
         return $return;
     }
-    
-
 }
