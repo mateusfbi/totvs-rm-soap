@@ -15,7 +15,7 @@ Este projeto é uma implementação em PHP para integração com o serviço SOAP
     ```sh
     composer require mateusfbi/totvs-rm-soap
     ```
-2. Importe o projeto via git:
+2. Instale importando o projeto via git:
 - Clone o repositório:
     ```sh
     git clone https://github.com/mateusfbi/totvs-rm-soap.git
