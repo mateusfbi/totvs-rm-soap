@@ -12,8 +12,9 @@ Este projeto é uma implementação em PHP para integração com o serviço SOAP
 ## Instalação
 
 1. Instale com o Composer:
-- composer require mateusfbi/totvs-rm-soap
-
+    ```sh
+    composer require mateusfbi/totvs-rm-soap
+    ```
 2. Importe o projeto via git:
 - Clone o repositório:
     ```sh
