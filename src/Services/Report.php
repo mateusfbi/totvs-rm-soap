@@ -70,66 +70,76 @@ class Report
         $this->id = $id;
     }
 
-    /**
-     * Define o filtro a ser aplicado na requisição do relatório.
+   	 /**
+     * Gera o XML de filtros do relatório.
      *
-     * @param string $filtro Filtro utilizado para consulta ou execução.
+     * Este método percorre um array de itens e monta a estrutura XML
+     * que será enviada ao serviço SOAP.
+     *
+     * @param array[] $filtros Array de filtros. Cada filtro deve ser um array associativo com a seguinte estrutura:
+     * [
+     * 'bandname' => (string) Nome da banda do relatório.
+     * 'mainfilter' => (bool) Se é o filtro principal.
+     * 'filtersbytable' => (array[]) Lista de sub-filtros, onde cada um é um array com:
+     * [
+     * 'filter' => (string) A condição de filtro SQL.
+     * 'name' => (string) Nome do filtro (opcional).
+     * 'tablename' => (string) Nome da tabela alvo.
+     * ]
+     * ]
      * @return void
      */
     public function setFiltro(array $filtros = []): void
     {
-        // Inicialização do XML       
-        $xmlString = '<ArrayOfRptFilterReportPar xmlns:i="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.totvs.com.br/RM/"></ArrayOfRptFilterReportPar>';
-        $xml = new SimpleXMLElement($xmlString);
+        $dom = new DOMDocument('1.0', 'UTF-8');
+        $dom->formatOutput = true;
+        $dom->preserveWhiteSpace = false;
 
-        // Loop principal para percorrer cada bloco de filtro do array
+        $nsRM = 'http://www.totvs.com.br/RM/';
+        $nsI = 'http://www.w3.org/2001/XMLSchema-instance';
+
+        // Cria o elemento raiz com seu namespace
+        $root = $dom->createElementNS($nsRM, 'ArrayOfRptFilterReportPar');
+        $root->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:i', $nsI);
+        $dom->appendChild($root);
+
         foreach ($filtros as $filtroData) {
-            // Adiciona o nó principal <rptfilterreportpar>
-            $filtroXml = $xml->addChild('rptfilterreportpar');
+            // Cria o nó <rptfilterreportpar> dentro do namespace padrão do root
+            $filtroXml = $dom->createElement('rptfilterreportpar');
 
-            // Adiciona os filhos com os dados do array
-            $filtroXml->addChild('bandname', $filtroData['bandname']);
-            $filtroXml->addChild('mainfilter', $filtroData['mainfilter'] ? 'true' : 'false'); // Converte booleano para string 'true'/'false'
+            $filtroXml->appendChild($dom->createElement('bandname', $filtroData['bandname']));
+            $filtroXml->appendChild($dom->createElement('mainfilter', $filtroData['mainfilter'] ? 'true' : 'false'));
 
-            $filtersByTableXml = $filtroXml->addChild('filtersbytable');
+            $filtersByTableXml = $dom->createElement('filtersbytable');
+            $valueParts = [];
 
-            $valueParts = []; // Array para guardar as partes do filtro para o campo <value>
-
-            // Verifica se existem sub-filtros para processar
             if (!empty($filtroData['filtersbytable'])) {
-                // Loop aninhado para os filtros dentro de <filtersbytable>
                 foreach ($filtroData['filtersbytable'] as $subFiltroData) {
-                    $subFiltroXml = $filtersByTableXml->addChild('rptfilterbytablepar');
-                    $subFiltroXml->addChild('filter', $subFiltroData['filter']);
-                    $subFiltroXml->addChild('name', $subFiltroData['name']);
-                    $subFiltroXml->addChild('tablename', $subFiltroData['tablename']);
+                    $subFiltroXml = $dom->createElement('rptfilterbytablepar');
+                    $subFiltroXml->appendChild($dom->createElement('filter', $subFiltroData['filter']));
+                    $subFiltroXml->appendChild($dom->createElement('name', $subFiltroData['name']));
+                    $subFiltroXml->appendChild($dom->createElement('tablename', $subFiltroData['tablename']));
+                    $filtersByTableXml->appendChild($subFiltroXml);
 
-                    // Adiciona a string do filtro ao array para montar o campo <value> depois
                     $valueParts[] = '(' . $subFiltroData['filter'] . ')';
                 }
             }
+            $filtroXml->appendChild($filtersByTableXml);
 
-            // Monta a string final para o campo <value>
             $valueString = implode(' AND ', $valueParts);
             if (count($valueParts) > 1) {
                 $valueString = '(' . $valueString . ')';
             }
+            $filtroXml->appendChild($dom->createElement('value', $valueString));
 
-            $filtroXml->addChild('value', $valueString);
+            $root->appendChild($filtroXml);
         }
-
-        // Formatação da Saída (para ficar legível)
-        $dom = new DOMDocument('1.0');
-        $dom->encoding = 'UTF-8';
-        $dom->preserveWhiteSpace = false;
-        $dom->formatOutput = true;
-        $dom->loadXML(str_replace('#', ':', $xml->asXML()));
-
-        $this->filtro = (string)$dom->saveXML();
+		
+        $this->filtro = $dom->saveXML();
     }
 
-    /**
-     * Gera o XML de parâmetros do relatório.
+	/**
+     * Gera o XML de parâmetros do relatório usando DOMDocument para maior robustez.
      *
      * Este método percorre um array de itens e monta a estrutura XML
      * que será enviada ao serviço SOAP. Cada item do array deve conter as chaves:
@@ -138,85 +148,92 @@ class Report
      * - Type (String, Int16, Int32 ou DateTime)
      * - Value
      *
-     * Para cada item, é criado um nó <RptParameterReportPar> com informação dos
-     * atributos, tipo e valor, seguindo o padrão esperado pelo serviço SOAP.
-     *
      * @param array $params Array contendo os dados necessários para gerar o XML.
      * @return void
      */
     public function setParametros(array $params = []): void
     {
+        // 1. Inicializa o DOMDocument, a ferramenta correta para XML complexo.
+        $dom = new DOMDocument('1.0', 'UTF-8');
+        $dom->formatOutput = true; // Formata a saída para ser legível.
+        $dom->preserveWhiteSpace = false;
 
-        $xml = new SimpleXMLElement('<ArrayOfRptParameterReportPar></ArrayOfRptParameterReportPar>');
-        $xml->addAttribute('xmlns#i', 'http://www.w3.org/2001/XMLSchema-instance');
-        $xml->addAttribute('xmlns', 'http://www.totvs.com.br/RM/');
+        // 2. Define os URIs dos namespaces para reutilização e legibilidade.
+        $nsRM = 'http://www.totvs.com.br/RM/';
+        $nsI = 'http://www.w3.org/2001/XMLSchema-instance';
+        $nsSystem = 'http://schemas.datacontract.org/2004/07/System';
+        $nsMscorlib = '-mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089-System-System.RuntimeType';
+        $nsUnityHolder = '-mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089-System-System.UnitySerializationHolder';
+        $nsSerialization = 'http://schemas.microsoft.com/2003/10/Serialization/';
+        $nsSchema = 'http://www.w3.org/2001/XMLSchema';
 
-        // Percorre o array
+        // 3. Cria o elemento raiz com seu namespace padrão.
+        $root = $dom->createElementNS($nsRM, 'ArrayOfRptParameterReportPar');
+        // Adiciona os namespaces ao elemento raiz de forma explícita e segura.
+        $root->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:i', $nsI);
+        $dom->appendChild($root);
+
+        // Percorre o array de parâmetros
         foreach ($params as $item) {
-            // Adiciona um nó <RptParameterReportPar> para cada item
-            $node = $xml->addChild('RptParameterReportPar');
-            $node->addChild('Description', htmlspecialchars($item['Description']));
-            $node->addChild('ParamName', htmlspecialchars($item['ParamName']));
+            // Cria o nó principal <RptParameterReportPar> (dentro do namespace padrão $nsRM)
+            $node = $dom->createElement('RptParameterReportPar');
 
-            // Determina o tipo e o valueType de acordo com o campo Type
+            $node->appendChild($dom->createElement('Description', $item['Description']));
+            $node->appendChild($dom->createElement('ParamName', $item['ParamName']));
+
+            // --- Bloco <Type> ---
+            $typeNode = $dom->createElement('Type');
+            // Adiciona os atributos com seus prefixos e namespaces de forma correta
+            $typeNode->setAttributeNS($nsI, 'i:type', 'd3p2:RuntimeType');
+            $typeNode->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:d3p1', $nsSystem);
+            $typeNode->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:d3p2', $nsMscorlib);
+            $typeNode->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:d3p3', $nsUnityHolder);
+            $typeNode->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:z', $nsSerialization);
+            $typeNode->setAttributeNS($nsSerialization, 'z:FactoryType', 'd3p3:UnitySerializationHolder');
+            
+            // Sub-elementos de <Type>
+            $typeValue = '';
+            $valueType = '';
             switch ($item['Type']) {
-                case 'String':
-                    $type = 'System.String';
-                    $valueType = 'string';
-                    break;
-                case 'Int16':
-                    $type = 'System.Int16';
-                    $valueType = 'int';
-                    break;
-                case 'Int32':
-                    $type = 'System.Int32';
-                    $valueType = 'int';
-                    break;
-                case 'DateTime':
-                    $type = 'System.DateTime';
-                    $valueType = 'dateTime';
-                    break;
+                case 'String': $typeValue = 'System.String'; $valueType = 'string'; break;
+                case 'Int16': $typeValue = 'System.Int16'; $valueType = 'int'; break;
+                case 'Int32': $typeValue = 'System.Int32'; $valueType = 'int'; break;
+                case 'DateTime': $typeValue = 'System.DateTime'; $valueType = 'dateTime'; break;
             }
-            // Adiciona a estrutura <Type>
-            $typeNode = $node->addChild('Type');
-            $typeNode->addAttribute("xmlns#d3p1", "http://schemas.datacontract.org/2004/07/System");
-            $typeNode->addAttribute("xmlns#d3p2", '-mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089-System-System.RuntimeType');
-            $typeNode->addAttribute('i#type', 'd3p2:RuntimeType');
-            $typeNode->addAttribute('xmlns#d3p3', '-mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089-System-System.UnitySerializationHolder');
-            $typeNode->addAttribute('z#FactoryType', 'd3p3:UnitySerializationHolder');
-            $typeNode->addAttribute('xmlns#z', 'http://schemas.microsoft.com/2003/10/Serialization/');
 
-            // Adiciona os subelementos de <Type>
-            $dataNode = $typeNode->addChild('Data', $type);
-            $dataNode->addAttribute('xmlns#d4p1', 'http://www.w3.org/2001/XMLSchema');
-            $dataNode->addAttribute('i#type', 'd4p1:string');
-            $dataNode->addAttribute('xmlns', '');
+            // Para os filhos de <Type>, o namespace padrão é resetado (xmlns="").
+            // Para isso, criamos os elementos sem namespace explícito.
+            $dataNode = $dom->createElement('Data', $typeValue);
+            $dataNode->setAttributeNS($nsI, 'i:type', 'd4p1:string');
+            $dataNode->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:d4p1', $nsSchema);
+            $typeNode->appendChild($dataNode);
 
-            $unityTypeNode = $typeNode->addChild('UnityType', '4');
-            $unityTypeNode->addAttribute('xmlns#d4p1', 'http://www.w3.org/2001/XMLSchema');
-            $unityTypeNode->addAttribute('i#type', 'd4p1:int');
-            $unityTypeNode->addAttribute('xmlns', '');
+            $unityTypeNode = $dom->createElement('UnityType', '4');
+            $unityTypeNode->setAttributeNS($nsI, 'i:type', 'd4p1:int');
+            $unityTypeNode->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:d4p1', $nsSchema);
+            $typeNode->appendChild($unityTypeNode);
 
-            $assemblyNameNode = $typeNode->addChild('AssemblyName', 'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089');
-            $assemblyNameNode->addAttribute('xmlns#d4p1', 'http://www.w3.org/2001/XMLSchema');
-            $assemblyNameNode->addAttribute('i#type', 'd4p1:string');
-            $assemblyNameNode->addAttribute('xmlns', '');
+            $assemblyNameNode = $dom->createElement('AssemblyName', 'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089');
+            $assemblyNameNode->setAttributeNS($nsI, 'i:type', 'd4p1:string');
+            $assemblyNameNode->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:d4p1', $nsSchema);
+            $typeNode->appendChild($assemblyNameNode);
 
-            // Adiciona o elemento <Value>
-            $valueNode = $node->addChild('Value', htmlspecialchars($item['Value']));
-            $valueNode->addAttribute('xmlns#d3p1', 'http://www.w3.org/2001/XMLSchema');
-            $valueNode->addAttribute('i#type', 'd3p1:' . $valueType);
+            $node->appendChild($typeNode); // Adiciona o bloco <Type> completo
 
-            $node->addChild('Visible', 'true');
+            // --- Bloco <Value> ---
+            $valueNode = $dom->createElement('Value', $item['Value']);
+            $valueNode->setAttributeNS($nsI, 'i:type', 'd3p1:' . $valueType);
+            $valueNode->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:d3p1', $nsSchema);
+            $node->appendChild($valueNode);
+            
+            $node->appendChild($dom->createElement('Visible', 'true'));
+
+            $root->appendChild($node); // Adiciona o nó do parâmetro ao XML raiz
         }
 
-        // Formata o XML para melhorar a legibilidade (whitespace e quebras de linha)
-        $dom = new DOMDocument('1.0');
-        $dom->preserveWhiteSpace = false;
-        $dom->formatOutput = true;
-        $dom->loadXML(str_replace('#', ':', $xml->asXML()));
-        // Retorna o XML como string
-        $this->parametros = (string)$dom->saveXML();
+        // 4. Salva o XML gerado na propriedade da classe.
+        // O saveXML() do DOM já gera o XML completo e formatado.
+        $this->parametros = $dom->saveXML();
     }
 
     /**
@@ -344,7 +361,6 @@ class Report
     {
 
         try {
-
             $execute = $this->webService->GenerateReport([
                 'codColigada' => $this->coligada,
                 'id'          => $this->id,
@@ -353,7 +369,9 @@ class Report
                 'fileName'    => $this->nomeArquivo,
                 'contexto'    => empty($this->contexto) ? null : $this->contexto,
             ]);
-
+            
+            
+            
             $return = $execute->GenerateReportResult;
         } catch (\Exception $e) {
             echo $e->getMessage() . PHP_EOL;
