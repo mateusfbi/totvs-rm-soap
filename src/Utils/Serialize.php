@@ -1,6 +1,6 @@
 <?php
 
-namespace TotvsRmSoap\Utils;
+namespace mateusfbi\TotvsRmSoap\Utils;
 
 /**
  * Classe Serialize

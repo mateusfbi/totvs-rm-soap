@@ -1,9 +1,8 @@
 <?php
 
-namespace TotvsRmSoap\Services;
+namespace mateusfbi\TotvsRmSoap\Services;
 
-use TotvsRmSoap\Connection\WebService;
-use TotvsRmSoap\Utils\Serialize;
+use mateusfbi\TotvsRmSoap\Connection\WebService;
 use \SimpleXMLElement;
 use \DOMDocument;
 
@@ -20,8 +19,9 @@ use \DOMDocument;
  *   - Obter a lista de relatórios.
  *   - Obter status, metadados, informações, tamanho, hash e chunks do arquivo gerado.
  *
- * @package TotvsRmSoap\Services
+ * @package mateusfbi\TotvsRmSoap\Services
  */
+
 class Report
 {
     private $webService;
@@ -76,9 +76,56 @@ class Report
      * @param string $filtro Filtro utilizado para consulta ou execução.
      * @return void
      */
-    public function setFiltro(string $filtro): void
+    public function setFiltro(array $filtros = []): void
     {
-        $this->filtro = $filtro;
+        // Inicialização do XML       
+        $xmlString = '<ArrayOfRptFilterReportPar xmlns:i="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.totvs.com.br/RM/"></ArrayOfRptFilterReportPar>';
+        $xml = new SimpleXMLElement($xmlString);
+
+        // Loop principal para percorrer cada bloco de filtro do array
+        foreach ($filtros as $filtroData) {
+            // Adiciona o nó principal <rptfilterreportpar>
+            $filtroXml = $xml->addChild('rptfilterreportpar');
+
+            // Adiciona os filhos com os dados do array
+            $filtroXml->addChild('bandname', $filtroData['bandname']);
+            $filtroXml->addChild('mainfilter', $filtroData['mainfilter'] ? 'true' : 'false'); // Converte booleano para string 'true'/'false'
+
+            $filtersByTableXml = $filtroXml->addChild('filtersbytable');
+
+            $valueParts = []; // Array para guardar as partes do filtro para o campo <value>
+
+            // Verifica se existem sub-filtros para processar
+            if (!empty($filtroData['filtersbytable'])) {
+                // Loop aninhado para os filtros dentro de <filtersbytable>
+                foreach ($filtroData['filtersbytable'] as $subFiltroData) {
+                    $subFiltroXml = $filtersByTableXml->addChild('rptfilterbytablepar');
+                    $subFiltroXml->addChild('filter', $subFiltroData['filter']);
+                    $subFiltroXml->addChild('name', $subFiltroData['name']);
+                    $subFiltroXml->addChild('tablename', $subFiltroData['tablename']);
+
+                    // Adiciona a string do filtro ao array para montar o campo <value> depois
+                    $valueParts[] = '(' . $subFiltroData['filter'] . ')';
+                }
+            }
+
+            // Monta a string final para o campo <value>
+            $valueString = implode(' AND ', $valueParts);
+            if (count($valueParts) > 1) {
+                $valueString = '(' . $valueString . ')';
+            }
+
+            $filtroXml->addChild('value', $valueString);
+        }
+
+        // Formatação da Saída (para ficar legível)
+        $dom = new DOMDocument('1.0');
+        $dom->encoding = 'UTF-8';
+        $dom->preserveWhiteSpace = false;
+        $dom->formatOutput = true;
+        $dom->loadXML(str_replace('#', ':', $xml->asXML()));
+
+        $this->filtro = (string)$dom->saveXML();
     }
 
     /**

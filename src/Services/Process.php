@@ -1,8 +1,8 @@
 <?php
 
-namespace TotvsRmSoap\Services;
+namespace mateusfbi\TotvsRmSoap\Services;
 
-use TotvsRmSoap\Connection\WebService;
+use mateusfbi\TotvsRmSoap\Connection\WebService;
 
 
 /**
