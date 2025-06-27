@@ -82,6 +82,26 @@ class Process
     }
 
     /**
+     * Método auxiliar para chamar métodos do serviço web e tratar exceções.
+     *
+     * @param string $methodName Nome do método a ser chamado no serviço web.
+     * @param array $params Parâmetros a serem passados para o método.
+     * @param mixed $defaultValue Valor padrão a ser retornado em caso de erro.
+     * @return mixed O resultado da chamada do método ou o valor padrão em caso de exceção.
+     */
+    private function callWebServiceMethod(string $methodName, array $params = [], $defaultValue = null)
+    {
+        try {
+            $execute = $this->webService->$methodName($params);
+            $resultProperty = $methodName . 'Result';
+            return $execute->$resultProperty;
+        } catch (\Exception $e) {
+            error_log("Erro ao chamar o método SOAP '{$methodName}' na classe " . __CLASS__ . ": " . $e->getMessage());
+            return $defaultValue;
+        }
+    }
+
+    /**
      * Executa o processo utilizando os parâmetros em formato XML.
      *
      * Prepara a requisição SOAP com o nome do processo e o XML de parâmetros configurado,
@@ -91,21 +111,11 @@ class Process
      */
     public function executeWithXmlParams(): int
     {
-
-        try {
-
-            $execute = $this->webService->ExecuteWithXmlParams([
-                'ProcessServerName' => $this->process,
-                'strXmlParams'      => $this->xml
-            ]);
-
-            $return = $execute->ExecuteWithXmlParamsResult;
-
-        } catch (\Exception $e) {
-            echo $e->getMessage() . PHP_EOL;
-        }
-
-        return $return;
+        $params = [
+            'ProcessServerName' => $this->process,
+            'strXmlParams'      => $this->xml
+        ];
+        return (int) $this->callWebServiceMethod('ExecuteWithXmlParams', $params, 0);
     }
 
     /**
@@ -118,21 +128,11 @@ class Process
      */
     public function ExecuteWithParams(): int
     {
-
-        try {
-
-            $execute = $this->webService->ExecuteWithParams([
-                'ProcessServerName' => $this->process,
-                'strXmlParams'      => $this->xml
-            ]);
-
-            $return = $execute->ExecuteWithParamsResult;
-
-        } catch (\Exception $e) {
-            echo $e->getMessage() . PHP_EOL;
-        }
-
-        return $return;
+        $params = [
+            'ProcessServerName' => $this->process,
+            'strXmlParams'      => $this->xml
+        ];
+        return (int) $this->callWebServiceMethod('ExecuteWithParams', $params, 0);
     }
 
     /**
@@ -144,20 +144,10 @@ class Process
      */
     public function getProcessStatus(): int
     {
-
-        try {
-
-            $execute = $this->webService->getProcessStatus([
-                'jobId'  => $this->jobId,
-                'execId' => $this->execId
-            ]);
-
-            $return = $execute->GetProcessStatusResult;
-
-        } catch (\Exception $e) {
-            echo '<br /><br /> ' . $e->getMessage() . PHP_EOL;
-        }
-
-        return $return;
+        $params = [
+            'jobId'  => $this->jobId,
+            'execId' => $this->execId
+        ];
+        return (int) $this->callWebServiceMethod('getProcessStatus', $params, 0);
     }
 }

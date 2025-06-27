@@ -104,6 +104,26 @@ class DataServer
     }
 
     /**
+     * Método auxiliar para chamar métodos do serviço web e tratar exceções.
+     *
+     * @param string $methodName Nome do método a ser chamado no serviço web.
+     * @param array $params Parâmetros a serem passados para o método.
+     * @param mixed $defaultValue Valor padrão a ser retornado em caso de erro.
+     * @return mixed O resultado da chamada do método ou o valor padrão em caso de exceção.
+     */
+    private function callWebServiceMethod(string $methodName, array $params = [], $defaultValue = null)
+    {
+        try {
+            $execute = $this->webService->$methodName($params);
+            $resultProperty = $methodName . 'Result';
+            return $execute->$resultProperty;
+        } catch (\Exception $e) {
+            error_log("Erro ao chamar o método SOAP '{$methodName}' na classe " . __CLASS__ . ": " . $e->getMessage());
+            return $defaultValue;
+        }
+    }
+
+    /**
      * Persiste um registro no DataServer.
      *
      * Envia a requisição SOAP para salvar um registro, utilizando o XML de dados e o contexto definidos.
@@ -112,13 +132,12 @@ class DataServer
      */
     public function saveRecord(): string
     {
-        $execute = $this->webService->SaveRecord([
+        $params = [
             'DataServerName'    => $this->dataServer,
             'XML'               => $this->xml,
             'Contexto'          => $this->contexto
-        ]);
-
-        return $execute->SaveRecordResult;
+        ];
+        return $this->callWebServiceMethod('SaveRecord', $params, '');
     }
 
     /**
@@ -128,20 +147,13 @@ class DataServer
      */
     public function readRecord(): array
     {
-        try {
-
-            $execute = $this->webService->ReadRecord([
-                'DataServerName'    => $this->dataServer,
-                'PrimaryKey'        => $this->primaryKey,
-                'Contexto'          => $this->contexto
-            ]);
-
-            $result = Serialize::result($execute->ReadRecordResult);
-        } catch (\Exception $e) {
-            echo $e->getMessage() . PHP_EOL;
-        }
-
-        return $result;
+        $params = [
+            'DataServerName'    => $this->dataServer,
+            'PrimaryKey'        => $this->primaryKey,
+            'Contexto'          => $this->contexto
+        ];
+        $result = $this->callWebServiceMethod('ReadRecord', $params, null);
+        return Serialize::result($result);
     }
 
     /**
@@ -154,21 +166,13 @@ class DataServer
      */
     public function readView(): array
     {
-
-        try {
-
-            $execute = $this->webService->ReadView([
-                'DataServerName'    => $this->dataServer,
-                'Filtro'            => $this->filtro,
-                'Contexto'          => $this->contexto
-            ]);
-
-            $result = Serialize::result($execute->ReadViewResult);
-        } catch (\Exception $e) {
-            echo '<br /><br /> ' . $e->getMessage() . PHP_EOL;
-        }
-
-        return $result;
+        $params = [
+            'DataServerName'    => $this->dataServer,
+            'Filtro'            => $this->filtro,
+            'Contexto'          => $this->contexto
+        ];
+        $result = $this->callWebServiceMethod('ReadView', $params, null);
+        return Serialize::result($result);
     }
 
     /**
@@ -180,20 +184,12 @@ class DataServer
      */
     public function deleteRecord(): int
     {
-        try {
-
-            $execute = $this->webService->DeleteRecord([
-                'DataServerName'    => $this->dataServer,
-                'XML'               => $this->xml,
-                'Contexto'          => $this->contexto
-            ]);
-
-            $result = $execute->DeleteRecordResult;
-        } catch (\Exception $e) {
-            echo $e->getMessage() . PHP_EOL;
-        }
-
-        return $result;
+        $params = [
+            'DataServerName'    => $this->dataServer,
+            'XML'               => $this->xml,
+            'Contexto'          => $this->contexto
+        ];
+        return (int) $this->callWebServiceMethod('DeleteRecord', $params, 0);
     }
 
     /**
@@ -205,19 +201,14 @@ class DataServer
      */
     public function deleteRecordByKey(): array
     {
-        try {
-
-            $execute = $this->webService->DeleteRecordByKey([
-                'DataServerName'    => $this->dataServer,
-                'PrimaryKey'        => $this->primaryKey,
-                'Contexto'          => $this->contexto,
-            ]);
-
-            $result = Serialize::result($execute->DeleteRecordByKeyResult);
-        } catch (\Exception $e) {
-            echo $e->getMessage() . PHP_EOL;
-        }
-
-        return $result;
+        $params = [
+            'DataServerName'    => $this->dataServer,
+            'PrimaryKey'        => $this->primaryKey,
+            'Contexto'          => $this->contexto,
+        ];
+        $result = $this->callWebServiceMethod('DeleteRecordByKey', $params, null);
+        return Serialize::result($result);
     }
+
+
 }

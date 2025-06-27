@@ -23,6 +23,26 @@ class Serialize
      */
     public static function result($response): array
     {
-        return json_decode(json_encode(simplexml_load_string($response)), true);
+        if (empty($response)) {
+            return [];
+        }
+
+        // Desabilita erros de XML para que possamos tratá-los manualmente
+        libxml_use_internal_errors(true);
+
+        $xmlObject = simplexml_load_string($response);
+
+        if ($xmlObject === false) {
+            $errors = libxml_get_errors();
+            foreach ($errors as $error) {
+                error_log("Erro ao carregar XML: " . $error->message);
+            }
+            libxml_clear_errors(); // Limpa os erros para não afetar futuras operações
+            return [];
+        }
+
+        libxml_use_internal_errors(false); // Restaura o comportamento padrão
+
+        return json_decode(json_encode($xmlObject), true);
     }
 }

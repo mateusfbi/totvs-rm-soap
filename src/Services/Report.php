@@ -3,7 +3,6 @@
 namespace mateusfbi\TotvsRmSoap\Services;
 
 use mateusfbi\TotvsRmSoap\Connection\WebService;
-use \SimpleXMLElement;
 use \DOMDocument;
 
 /**
@@ -31,7 +30,6 @@ class Report
     private string $parametros;
     private string $nomeArquivo;
     private string $contexto;
-    private int $idReport;
     private int $offset;
     private int $length;
     private string $guid;
@@ -70,6 +68,61 @@ class Report
         $this->id = $id;
     }
 
+    /**
+     * Define o nome do arquivo do relatório.
+     *
+     * @param string $nomeArquivo Nome do arquivo.
+     * @return void
+     */
+    public function setNomeArquivo(string $nomeArquivo): void
+    {
+        $this->nomeArquivo = $nomeArquivo;
+    }
+
+    /**
+     * Define o contexto da requisição.
+     *
+     * @param string $contexto Contexto da requisição.
+     * @return void
+     */
+    public function setContexto(string $contexto): void
+    {
+        $this->contexto = $contexto;
+    }
+
+    /**
+     * Define o GUID utilizado para obter informações do arquivo gerado.
+     *
+     * @param string $guid Identificador único (GUID).
+     * @return void
+     */
+    public function setGuid(string $guid): void
+    {
+        $this->guid = $guid;
+    }
+
+    /**
+     * Define o tamanho do chunk de arquivo a ser recuperado.
+     *
+     * @param int $length Tamanho do chunk.
+     * @return void
+     */
+    public function setLength(int $length): void
+    {
+        $this->length = $length;
+    }
+
+    /**
+     * Define o offset para a requisição de um chunk do arquivo.
+     *
+     * @param int $offset Offset do chunk.
+     * @return void
+     */
+    public function setOffset(int $offset): void
+    {
+        $this->offset = $offset;
+    }
+
    	 /**
      * Gera o XML de filtros do relatório.
      *
@@ -91,50 +144,66 @@ class Report
      */
     public function setFiltro(array $filtros = []): void
     {
-        $dom = new DOMDocument('1.0', 'UTF-8');
-        $dom->formatOutput = true;
-        $dom->preserveWhiteSpace = false;
+		// 1. Inicializa o objeto DOMDocument
+		$dom = new DOMDocument('1.0', 'utf-16');
+		$dom->formatOutput = true; // Formata o XML para melhor legibilidade
+		$dom->preserveWhiteSpace = false;
 
-        $nsRM = 'http://www.totvs.com.br/RM/';
-        $nsI = 'http://www.w3.org/2001/XMLSchema-instance';
+		// 2. Cria o elemento raiz <ArrayOfRptFilterReportPar> com seus namespaces
+		$root = $dom->createElement('ArrayOfRptFilterReportPar');
+		$root->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:i', 'http://www.w3.org/2001/XMLSchema-instance');
+		$root->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns', 'http://www.totvs.com.br/RM/');
+		$dom->appendChild($root);
 
-        // Cria o elemento raiz com seu namespace
-        $root = $dom->createElementNS($nsRM, 'ArrayOfRptFilterReportPar');
-        $root->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:i', $nsI);
-        $dom->appendChild($root);
+		// 3. Percorre o array de entrada para criar cada bloco do XML
+		foreach ($filtros as $filtroData) {
+		    $rptFilterReportPar = $dom->createElement('RptFilterReportPar');
 
-        foreach ($filtros as $filtroData) {
-            // Cria o nó <rptfilterreportpar> dentro do namespace padrão do root
-            $filtroXml = $dom->createElement('rptfilterreportpar');
+		    // Adiciona a tag <BandName>
+		    $rptFilterReportPar->appendChild($dom->createElement('BandName', $filtroData['bandname']));
 
-            $filtroXml->appendChild($dom->createElement('bandname', $filtroData['bandname']));
-            $filtroXml->appendChild($dom->createElement('mainfilter', $filtroData['mainfilter'] ? 'true' : 'false'));
+		    // Cria a tag <FiltersByTable> e seus filhos
+		    $filtersByTable = $dom->createElement('FiltersByTable');
+		    $valueContent = ''; // Inicializa o conteúdo para a tag <Value>
 
-            $filtersByTableXml = $dom->createElement('filtersbytable');
-            $valueParts = [];
+		    if (!empty($filtroData['filtersbytable'])) {
+		        $allFilters = [];
+		        foreach ($filtroData['filtersbytable'] as $tableFilter) {
+		            $rptFilterByTablePar = $dom->createElement('RptFilterByTablePar');
 
-            if (!empty($filtroData['filtersbytable'])) {
-                foreach ($filtroData['filtersbytable'] as $subFiltroData) {
-                    $subFiltroXml = $dom->createElement('rptfilterbytablepar');
-                    $subFiltroXml->appendChild($dom->createElement('filter', $subFiltroData['filter']));
-                    $subFiltroXml->appendChild($dom->createElement('name', $subFiltroData['name']));
-                    $subFiltroXml->appendChild($dom->createElement('tablename', $subFiltroData['tablename']));
-                    $filtersByTableXml->appendChild($subFiltroXml);
+		            $filterElement = $dom->createElement('Filter');
+		            // Usa CDATA para o conteúdo do filtro
+		            $filterElement->appendChild($dom->createCDATASection($tableFilter['filter']));
+		            $rptFilterByTablePar->appendChild($filterElement);
 
-                    $valueParts[] = '(' . $subFiltroData['filter'] . ')';
-                }
-            }
-            $filtroXml->appendChild($filtersByTableXml);
+		            $rptFilterByTablePar->appendChild($dom->createElement('Name', $tableFilter['name']));
+		            $rptFilterByTablePar->appendChild($dom->createElement('TableName', $tableFilter['tablename']));
 
-            $valueString = implode(' AND ', $valueParts);
-            if (count($valueParts) > 1) {
-                $valueString = '(' . $valueString . ')';
-            }
-            $filtroXml->appendChild($dom->createElement('value', $valueString));
+		            $filtersByTable->appendChild($rptFilterByTablePar);
 
-            $root->appendChild($filtroXml);
-        }
-		
+		            // Acumula os filtros para usar na tag <Value>
+		            $allFilters[] = $tableFilter['filter'];
+		        }
+		        // Constrói o conteúdo da tag <Value>
+		        $valueContent = '(' . implode(' AND ', $allFilters) . ')';
+		    }
+		    $rptFilterReportPar->appendChild($filtersByTable);
+
+		    // Adiciona a tag <MainFilter>
+		    $rptFilterReportPar->appendChild($dom->createElement('MainFilter', $filtroData['mainfilter'] ? 'true' : 'false'));
+
+		    // Adiciona a tag <Value> com o conteúdo gerado
+		    $valueElement = $dom->createElement('Value');
+		    if (!empty($valueContent)) {
+		        $valueElement->appendChild($dom->createCDATASection($valueContent));
+		    }
+		    $rptFilterReportPar->appendChild($valueElement);
+
+		    // Adiciona o bloco completo ao elemento raiz
+		    $root->appendChild($rptFilterReportPar);
+		}
+
+		// 4. Retorna a string XML completa
         $this->filtro = $dom->saveXML();
     }
 
@@ -190,7 +259,7 @@ class Report
             $typeNode->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:d3p3', $nsUnityHolder);
             $typeNode->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:z', $nsSerialization);
             $typeNode->setAttributeNS($nsSerialization, 'z:FactoryType', 'd3p3:UnitySerializationHolder');
-            
+
             // Sub-elementos de <Type>
             $typeValue = '';
             $valueType = '';
@@ -225,7 +294,7 @@ class Report
             $valueNode->setAttributeNS($nsI, 'i:type', 'd3p1:' . $valueType);
             $valueNode->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:d3p1', $nsSchema);
             $node->appendChild($valueNode);
-            
+
             $node->appendChild($dom->createElement('Visible', 'true'));
 
             $root->appendChild($node); // Adiciona o nó do parâmetro ao XML raiz
@@ -237,73 +306,6 @@ class Report
     }
 
     /**
-     * Define o nome do arquivo do relatório.
-     *
-     * @param string $nomeArquivo Nome do arquivo.
-     * @return void
-     */
-    public function setNomeArquivo(string $nomeArquivo): void
-    {
-        $this->nomeArquivo = $nomeArquivo;
-    }
-
-    /**
-     * Define o contexto da requisição.
-     *
-     * @param string $contexto Contexto da requisição.
-     * @return void
-     */
-    public function setContexto(string $contexto): void
-    {
-        $this->contexto = $contexto;
-    }
-
-    /**
-     * Define o identificador específico do relatório para requisições adicionais.
-     *
-     * @param int $idReport Identificador do relatório.
-     * @return void
-     */
-    public function setIdReport(int $idReport): void
-    {
-        $this->idReport = $idReport;
-    }
-
-    /**
-     * Define o GUID utilizado para obter informações do arquivo gerado.
-     *
-     * @param string $guid Identificador único (GUID).
-     * @return void
-     */
-    public function setGuid(string $guid): void
-    {
-        $this->guid = $guid;
-    }
-
-    /**
-     * Define o tamanho do chunk de arquivo a ser recuperado.
-     *
-     * @param int $length Tamanho do chunk.
-     * @return void
-     */
-    public function setLength(int $length): void
-    {
-        $this->length = $length;
-    }
-
-    /**
-     * Define o offset para a requisição de um chunk do arquivo.
-     *
-     * @param int $offset Offset do chunk.
-     * @return void
-     */
-    public function setOffset(int $offset): void
-    {
-        $this->offset = $offset;
-    }
-
-
-    /**
      * Obtém a lista de relatórios disponíveis.
      *
      * Executa o método GetReportList do serviço SOAP e processa o resultado,
@@ -313,40 +315,62 @@ class Report
      */
     public function getReportList(): array
     {
+        $rawResult = $this->callWebServiceMethod('GetReportList', ['codColigada' => $this->coligada], '');
+        $return = [];
 
-        try {
-
-            $execute = $this->webService->GetReportList([
-                'codColigada' => $this->coligada
-            ]);
-
-            $result = str_replace('s:7625:"', '', $execute->GetReportListResult);
+        if (!empty($rawResult)) {
+            // Remove o prefixo de serialização PHP, se presente (ex: s:7625:")
+            $result = preg_replace('/^s:\d+:"/', '', $rawResult);
 
             $registros = explode(';,', $result);
 
             foreach ($registros as $registro) {
-                $registro = trim($registro); // Remover espaços e quebras de linha
+                $registro = trim($registro);
                 if (empty($registro)) continue;
-                // Dividir os campos por vírgula
-                $campos = explode(',', $registro);
-                // Mapear os campos (ajuste os índices conforme necessário)
-                $dados = [
-                    'coligada' => trim($campos[0]),
-                    'sistema' => trim($campos[1]),
-                    'id' => trim($campos[2]),
-                    'codigo' => trim($campos[3]),
-                    'nome' => trim(implode(', ', array_slice($campos, 4, -2))),
-                    'data' => trim($campos[count($campos) - 2]),
-                    'uuid' => trim($campos[count($campos) - 1])
-                ];
 
-                $return[] = $dados;
+                $campos = explode(',', $registro);
+
+                // Garante que há campos suficientes antes de tentar acessá-los
+                if (count($campos) >= 6) { // coligada, sistema, id, codigo, nome (pelo menos 1 parte), data, uuid
+                    $dados = [
+                        'coligada' => trim($campos[0]),
+                        'sistema' => trim($campos[1]),
+                        'id' => trim($campos[2]),
+                        'codigo' => trim($campos[3]),
+                        // O nome pode conter vírgulas, então pegamos tudo entre o 4º campo e os dois últimos
+                        'nome' => trim(implode(', ', array_slice($campos, 4, -2))),
+                        'data' => trim($campos[count($campos) - 2]),
+                        'uuid' => trim($campos[count($campos) - 1])
+                    ];
+                    $return[] = $dados;
+                } else {
+                    // Logar ou lidar com registros mal formatados
+                    error_log("Registro de relatório mal formatado encontrado: " . $registro);
+                }
             }
-        } catch (\Exception $e) {
-            echo $e->getMessage() . PHP_EOL;
         }
 
         return $return;
+    }
+
+    /**
+     * Método auxiliar para chamar métodos do serviço web e tratar exceções.
+     *
+     * @param string $methodName Nome do método a ser chamado no serviço web.
+     * @param array $params Parâmetros a serem passados para o método.
+     * @param mixed $defaultValue Valor padrão a ser retornado em caso de erro.
+     * @return mixed O resultado da chamada do método ou o valor padrão em caso de exceção.
+     */
+    private function callWebServiceMethod(string $methodName, array $params = [], $defaultValue = null)
+    {
+        try {
+            $execute = $this->webService->$methodName($params);
+            $resultProperty = $methodName . 'Result';
+            return $execute->$resultProperty;
+        } catch (\Exception $e) {
+            error_log("Erro ao chamar o método SOAP '{$methodName}' na classe " . __CLASS__ . ": " . $e->getMessage());
+            return $defaultValue;
+        }
     }
 
     /**
@@ -359,25 +383,15 @@ class Report
      */
     public function generateReport(): string
     {
-
-        try {
-            $execute = $this->webService->GenerateReport([
-                'codColigada' => $this->coligada,
-                'id'          => $this->id,
-                'filters'     => empty($this->filtro) ? null : $this->filtro,
-                'parameters'  => empty($this->parametros) ? null : $this->parametros,
-                'fileName'    => $this->nomeArquivo,
-                'contexto'    => empty($this->contexto) ? null : $this->contexto,
-            ]);
-            
-            
-            
-            $return = $execute->GenerateReportResult;
-        } catch (\Exception $e) {
-            echo $e->getMessage() . PHP_EOL;
-        }
-
-        return $return;
+        $params = [
+            'codColigada' => $this->coligada,
+            'id'          => $this->id,
+            'filters'     => empty($this->filtro) ? null : $this->filtro,
+            'parameters'  => empty($this->parametros) ? null : $this->parametros,
+            'fileName'    => $this->nomeArquivo,
+            'contexto'    => empty($this->contexto) ? null : $this->contexto,
+        ];
+        return $this->callWebServiceMethod('GenerateReport', $params, '');
     }
 
     /**
@@ -389,24 +403,15 @@ class Report
      */
     public function generateReportAsynchronous(): string
     {
-
-        try {
-
-            $execute = $this->webService->GenerateReportAsynchronous([
-                'codColigada' => $this->coligada,
-                'id'          => $this->id,
-                'filters'     => $this->filtro,
-                'parameters'  => $this->parametros,
-                'fileName'    => $this->nomeArquivo,
-                'contexto'    => $this->contexto,
-            ]);
-
-            $return = $execute->GenerateReportAsynchronousResult;
-        } catch (\Exception $e) {
-            echo $e->getMessage() . PHP_EOL;
-        }
-
-        return $return;
+        $params = [
+            'codColigada' => $this->coligada,
+            'id'          => $this->id,
+            'filters'     => $this->filtro,
+            'parameters'  => $this->parametros,
+            'fileName'    => $this->nomeArquivo,
+            'contexto'    => $this->contexto,
+        ];
+        return $this->callWebServiceMethod('GenerateReportAsynchronous', $params, '');
     }
 
    /**
@@ -418,20 +423,11 @@ class Report
      */
     public function getReportMetaData(): string
     {
-
-        try {
-
-            $execute = $this->webService->GetReportMetaData([
-                'codColigada' => $this->coligada,
-                'id'      => $this->id
-            ]);
-
-            $return = $execute->GetReportMetaDataResult;
-        } catch (\Exception $e) {
-            echo $e->getMessage() . PHP_EOL;
-        }
-
-        return $return;
+        $params = [
+            'codColigada' => $this->coligada,
+            'id'      => $this->id
+        ];
+        return $this->callWebServiceMethod('GetReportMetaData', $params, '');
     }
 
     /**
@@ -444,21 +440,12 @@ class Report
      */
     public function getReportInfo(): array
     {
-        try {
-
-            $execute = $this->webService->GetReportInfo([
-                'codColigada'      => $this->coligada,
-                'idReport'      => $this->idReport
-            ]);
-
-            $result = $execute->GetReportInfoResult;
-            $return = isset($result->string) ? $result->string : [];
-        } catch (\Exception $e) {
-            $return = [];
-            echo $e->getMessage() . PHP_EOL;
-        }
-
-        return $return;
+        $params = [
+            'codColigada'      => $this->coligada,
+            'idReport'      => $this->id
+        ];
+        $result = $this->callWebServiceMethod('GetReportInfo', $params, null);
+        return isset($result->string) ? $result->string : [];
     }
 
     /**
@@ -471,19 +458,10 @@ class Report
      */
     public function getGeneratedReportStatus(): string
     {
-
-        try {
-
-            $execute = $this->webService->GetGeneratedReportStatus([
-                'id'      => $this->id
-            ]);
-
-            $return = $execute->GetGeneratedReportStatusResult;
-        } catch (\Exception $e) {
-            echo $e->getMessage() . PHP_EOL;
-        }
-
-        return $return;
+        $params = [
+            'id'      => $this->id
+        ];
+        return $this->callWebServiceMethod('GetGeneratedReportStatus', $params, '');
     }
 
     /**
@@ -495,20 +473,10 @@ class Report
      */
     public function getGeneratedReportSize(): int
     {
-
-        try {
-
-            $execute = $this->webService->GetGeneratedReportSize([
-                'guid'      => $this->guid
-            ]);
-
-            $return = $execute->GetGeneratedReportSizeResult;
-        } catch (\Exception $e) {
-            $return = '';
-            echo $e->getMessage() . PHP_EOL;
-        }
-
-        return $return;
+        $params = [
+            'guid'      => $this->guid
+        ];
+        return (int) $this->callWebServiceMethod('GetGeneratedReportSize', $params, 0);
     }
 
     /**
@@ -520,20 +488,10 @@ class Report
      */
     public function getFileHash(): string
     {
-
-        try {
-
-            $execute = $this->webService->GetFileHash([
-                'guid'      => $this->guid
-            ]);
-
-            $return = $execute->GetFileHashResult;
-        } catch (\Exception $e) {
-            $return = '';
-            echo $e->getMessage() . PHP_EOL;
-        }
-
-        return $return;
+        $params = [
+            'guid'      => $this->guid
+        ];
+        return $this->callWebServiceMethod('GetFileHash', $params, '');
     }
 
     /**
@@ -545,20 +503,11 @@ class Report
      */
     public function getFileChunk(): string
     {
-
-        try {
-
-            $execute = $this->webService->GetFileChunk([
-                'guid'      => $this->guid,
-                'offset'      => $this->offset,
-                'length'      => $this->length
-            ]);
-
-            $return = $execute->GetFileChunkResult;
-        } catch (\Exception $e) {
-            echo $e->getMessage() . PHP_EOL;
-        }
-
-        return $return;
+        $params = [
+            'guid'      => $this->guid,
+            'offset'      => $this->offset,
+            'length'      => $this->length
+        ];
+        return $this->callWebServiceMethod('GetFileChunk', $params, '');
     }
 }

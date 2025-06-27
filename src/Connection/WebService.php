@@ -25,11 +25,15 @@ class WebService
      * Carrega as variáveis de ambiente utilizando a biblioteca Dotenv a partir do diretório base
      * do projeto. Essas variáveis são utilizadas para configurar a conexão SOAP.
      */
+    private static bool $_envLoaded = false;
+
     public function __construct()
     {
-
-        $dotenv = Dotenv::createImmutable(__DIR__ . "/../../");
-        $dotenv->load();
+        if (!self::$_envLoaded) {
+            $dotenv = Dotenv::createImmutable(__DIR__ . "/../../");
+            $dotenv->load();
+            self::$_envLoaded = true;
+        }
     }
 
     /**
@@ -51,30 +55,43 @@ class WebService
      */
     public function getClient(string $path): SoapClient
     {
-        try {
-
-            $connection = new SoapClient($_ENV['WS_URL'] . $path, [
-                'login'                 => $_ENV['WS_USER'],
-                'password'              => $_ENV['WS_PASS'],
-                'authentication'        => SOAP_AUTHENTICATION_BASIC,
-                'soap_version'          => SOAP_1_1,
-                'trace'                 => 1,
-                'excepitions'           => 0,
-                "stream_context" => stream_context_create(
-                    [
-                        'ssl' => [
-                            'verify_peer'       => false,
-                            'verify_peer_name'  => false,
-                            'allow_self_signed' => true
-                        ]
+        $url = $_ENV['WS_URL'] . $path;
+        $options = [
+            'login'                 => $_ENV['WS_USER'],
+            'password'              => $_ENV['WS_PASS'],
+            'authentication'        => SOAP_AUTHENTICATION_BASIC,
+            'soap_version'          => SOAP_1_1,
+            'trace'                 => 1,
+            'exceptions'            => 1, // Corrigido de 'excepitions' para 'exceptions' e definido como true
+            "stream_context" => stream_context_create(
+                [
+                    'ssl' => [
+                        'verify_peer'       => false,
+                        'verify_peer_name'  => false,
+                        'allow_self_signed' => true
                     ]
-                )
-            ]);
-        } catch (\Exception $e) {
-            echo '<h2 style="color:red;"><br /><br /> Erro: Não foi possival conectar ao servidor do RM.' . ' - ' . getenv('WS_URL') . '<br /></h2>' . $e->getMessage() . PHP_EOL;
-            exit;
-        }
+                ]
+            )
+        ];
+        return $this->createSoapClient($url, $options);
+    }
 
-        return $connection;
+    /**
+     * Método auxiliar para criar uma instância do SoapClient e tratar exceções.
+     *
+     * @param string $url URL completa do serviço SOAP.
+     * @param array $options Opções para o SoapClient.
+     * @return \SoapClient Instância do cliente SOAP.
+     * @throws \RuntimeException Se houver um erro na conexão com o servidor SOAP.
+     */
+    private function createSoapClient(string $url, array $options): \SoapClient
+    {
+        try {
+            return new \SoapClient($url, $options);
+        } catch (\Exception $e) {
+            $errorMessage = 'Erro: Não foi possível conectar ao servidor do RM. URL: ' . $url . ' - ' . $e->getMessage();
+            error_log($errorMessage);
+            throw new \RuntimeException($errorMessage, 0, $e);
+        }
     }
 }

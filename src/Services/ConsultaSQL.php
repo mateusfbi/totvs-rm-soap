@@ -83,15 +83,31 @@ class ConsultaSQL
     {
         $array = [];
 
-        if ($params):
+        foreach ($params as $key => $value) {
+            $array[] = "{$key}={$value}";
+        }
 
-            foreach ($params as $key => $value):
+        $this->parametros = implode(';', $array);
+    }
 
-                $array[] = "{$key}={$value}";
-            endforeach;
-        endif;
-
-        $this->parametros = join(';', $array);
+    /**
+     * Método auxiliar para chamar métodos do serviço web e tratar exceções.
+     *
+     * @param string $methodName Nome do método a ser chamado no serviço web.
+     * @param array $params Parâmetros a serem passados para o método.
+     * @param mixed $defaultValue Valor padrão a ser retornado em caso de erro.
+     * @return mixed O resultado da chamada do método ou o valor padrão em caso de exceção.
+     */
+    private function callWebServiceMethod(string $methodName, array $params = [], $defaultValue = null)
+    {
+        try {
+            $execute = $this->webService->$methodName($params);
+            $resultProperty = $methodName . 'Result';
+            return $execute->$resultProperty;
+        } catch (\Exception $e) {
+            error_log("Erro ao chamar o método SOAP '{$methodName}' na classe " . __CLASS__ . ": " . $e->getMessage());
+            return $defaultValue;
+        }
     }
 
     /**
@@ -108,21 +124,14 @@ class ConsultaSQL
      */
     public function RealizarConsultaSQL(): array
     {
-        try {
-
-            $execute = $this->webService->RealizarConsultaSQL([
-                'codSentenca' => $this->sentenca,
-                'codColigada' => $this->coligada,
-                'codSistema' => $this->sistema,
-                'parameters' => empty($this->parametros)?null:$this->parametros,
-            ]);
-
-            $result = Serialize::result($execute->RealizarConsultaSQLResult);
-
-        } catch (\Exception $e) {
-            echo '<br /><br /> ' . $e->getMessage() . PHP_EOL;
-        }
-
-        return ['response' => (isset($result['Resultado']) ? $result['Resultado'] : false)];
+        $params = [
+            'codSentenca' => $this->sentenca,
+            'codColigada' => $this->coligada,
+            'codSistema' => $this->sistema,
+            'parameters' => empty($this->parametros) ? null : $this->parametros,
+        ];
+        $result = $this->callWebServiceMethod('RealizarConsultaSQL', $params, null);
+        return ['response' => Serialize::result($result)['Resultado'] ?? false];
     }
+
 }
