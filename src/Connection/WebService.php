@@ -66,9 +66,12 @@ class WebService
             "stream_context" => stream_context_create(
                 [
                     'ssl' => [
-                        'verify_peer'       => false,
-                        'verify_peer_name'  => false,
-                        'allow_self_signed' => true
+                        // ATENÇÃO: Em produção, é ALTAMENTE recomendado definir estas opções como true
+                        // e configurar corretamente os certificados CA para garantir a segurança SSL.
+                        // Para desenvolvimento, podem ser definidos como false no .env.
+                        'verify_peer'       => filter_var($_ENV['WS_SSL_VERIFY_PEER'] ?? true, FILTER_VALIDATE_BOOLEAN),
+                        'verify_peer_name'  => filter_var($_ENV['WS_SSL_VERIFY_PEER_NAME'] ?? true, FILTER_VALIDATE_BOOLEAN),
+                        'allow_self_signed' => filter_var($_ENV['WS_SSL_ALLOW_SELF_SIGNED'] ?? false, FILTER_VALIDATE_BOOLEAN)
                     ]
                 ]
             )

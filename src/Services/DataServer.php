@@ -2,6 +2,8 @@
 
 namespace mateusfbi\TotvsRmSoap\Services;
 
+use mateusfbi\TotvsRmSoap\Services\AbstractService;
+
 use mateusfbi\TotvsRmSoap\Connection\WebService;
 use mateusfbi\TotvsRmSoap\Utils\Serialize;
 
@@ -14,7 +16,7 @@ use mateusfbi\TotvsRmSoap\Utils\Serialize;
  *
  * @package TotvsRmSoap\Services
  */
-class DataServer
+class DataServer extends AbstractService
 {
     private $webService;
     private string $dataServer;
@@ -103,25 +105,7 @@ class DataServer
         $this->xml = $dom->saveXML();
     }
 
-    /**
-     * Método auxiliar para chamar métodos do serviço web e tratar exceções.
-     *
-     * @param string $methodName Nome do método a ser chamado no serviço web.
-     * @param array $params Parâmetros a serem passados para o método.
-     * @param mixed $defaultValue Valor padrão a ser retornado em caso de erro.
-     * @return mixed O resultado da chamada do método ou o valor padrão em caso de exceção.
-     */
-    private function callWebServiceMethod(string $methodName, array $params = [], $defaultValue = null)
-    {
-        try {
-            $execute = $this->webService->$methodName($params);
-            $resultProperty = $methodName . 'Result';
-            return $execute->$resultProperty;
-        } catch (\Exception $e) {
-            error_log("Erro ao chamar o método SOAP '{$methodName}' na classe " . __CLASS__ . ": " . $e->getMessage());
-            return $defaultValue;
-        }
-    }
+    
 
     /**
      * Persiste um registro no DataServer.

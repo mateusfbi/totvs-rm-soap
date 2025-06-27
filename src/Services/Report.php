@@ -2,6 +2,8 @@
 
 namespace mateusfbi\TotvsRmSoap\Services;
 
+use mateusfbi\TotvsRmSoap\Services\AbstractService;
+
 use mateusfbi\TotvsRmSoap\Connection\WebService;
 use \DOMDocument;
 
@@ -21,7 +23,7 @@ use \DOMDocument;
  * @package mateusfbi\TotvsRmSoap\Services
  */
 
-class Report
+class Report extends AbstractService
 {
     private $webService;
     private int $coligada;
@@ -146,7 +148,7 @@ class Report
     {
 		// 1. Inicializa o objeto DOMDocument
 		$dom = new DOMDocument('1.0', 'utf-16');
-		$dom->formatOutput = true; // Formata o XML para melhor legibilidade
+		$dom->formatOutput = true; // ATENÇÃO: Para produção, considere definir como false para otimização de performance (reduz tamanho do XML).
 		$dom->preserveWhiteSpace = false;
 
 		// 2. Cria o elemento raiz <ArrayOfRptFilterReportPar> com seus namespaces
@@ -224,7 +226,7 @@ class Report
     {
         // 1. Inicializa o DOMDocument, a ferramenta correta para XML complexo.
         $dom = new DOMDocument('1.0', 'UTF-8');
-        $dom->formatOutput = true; // Formata a saída para ser legível.
+        $dom->formatOutput = true; // ATENÇÃO: Para produção, considere definir como false para otimização de performance (reduz tamanho do XML).
         $dom->preserveWhiteSpace = false;
 
         // 2. Define os URIs dos namespaces para reutilização e legibilidade.
@@ -315,6 +317,9 @@ class Report
      */
     public function getReportList(): array
     {
+        // ATENÇÃO: A análise desta string é frágil e depende de um formato exato.
+        // Se possível, verifique se o serviço SOAP pode retornar os dados em XML
+        // para uma análise mais robusta e menos propensa a erros.
         $rawResult = $this->callWebServiceMethod('GetReportList', ['codColigada' => $this->coligada], '');
         $return = [];
 
@@ -353,25 +358,7 @@ class Report
         return $return;
     }
 
-    /**
-     * Método auxiliar para chamar métodos do serviço web e tratar exceções.
-     *
-     * @param string $methodName Nome do método a ser chamado no serviço web.
-     * @param array $params Parâmetros a serem passados para o método.
-     * @param mixed $defaultValue Valor padrão a ser retornado em caso de erro.
-     * @return mixed O resultado da chamada do método ou o valor padrão em caso de exceção.
-     */
-    private function callWebServiceMethod(string $methodName, array $params = [], $defaultValue = null)
-    {
-        try {
-            $execute = $this->webService->$methodName($params);
-            $resultProperty = $methodName . 'Result';
-            return $execute->$resultProperty;
-        } catch (\Exception $e) {
-            error_log("Erro ao chamar o método SOAP '{$methodName}' na classe " . __CLASS__ . ": " . $e->getMessage());
-            return $defaultValue;
-        }
-    }
+    
 
     /**
      * Gera o relatório através do serviço SOAP.

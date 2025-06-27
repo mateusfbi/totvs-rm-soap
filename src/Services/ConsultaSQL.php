@@ -2,6 +2,8 @@
 
 namespace mateusfbi\TotvsRmSoap\Services;
 
+use mateusfbi\TotvsRmSoap\Services\AbstractService;
+
 use mateusfbi\TotvsRmSoap\Connection\WebService;
 use mateusfbi\TotvsRmSoap\Utils\Serialize;
 
@@ -15,7 +17,7 @@ use mateusfbi\TotvsRmSoap\Utils\Serialize;
  * @package mateusfbi\TotvsRmSoap\Services
  */
 
-class ConsultaSQL
+class ConsultaSQL extends AbstractService
 {
     private $webService;
     private string $sentenca;
@@ -90,25 +92,7 @@ class ConsultaSQL
         $this->parametros = implode(';', $array);
     }
 
-    /**
-     * Método auxiliar para chamar métodos do serviço web e tratar exceções.
-     *
-     * @param string $methodName Nome do método a ser chamado no serviço web.
-     * @param array $params Parâmetros a serem passados para o método.
-     * @param mixed $defaultValue Valor padrão a ser retornado em caso de erro.
-     * @return mixed O resultado da chamada do método ou o valor padrão em caso de exceção.
-     */
-    private function callWebServiceMethod(string $methodName, array $params = [], $defaultValue = null)
-    {
-        try {
-            $execute = $this->webService->$methodName($params);
-            $resultProperty = $methodName . 'Result';
-            return $execute->$resultProperty;
-        } catch (\Exception $e) {
-            error_log("Erro ao chamar o método SOAP '{$methodName}' na classe " . __CLASS__ . ": " . $e->getMessage());
-            return $defaultValue;
-        }
-    }
+    
 
     /**
      * Realiza a consulta SQL através do serviço SOAP.
