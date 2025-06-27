@@ -19,7 +19,7 @@ use mateusfbi\TotvsRmSoap\Utils\Serialize;
 
 class ConsultaSQL extends AbstractService
 {
-    private $webService;
+    protected SoapClient $webService;
     private string $sentenca;
     private string $coligada;
     private string $sistema;

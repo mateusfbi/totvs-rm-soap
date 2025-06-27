@@ -2,8 +2,8 @@
 
 namespace mateusfbi\TotvsRmSoap\Services;
 
-use SoapClient;
-use RuntimeException;
+
+
 
 /**
  * Classe Abstrata AbstractService
@@ -18,7 +18,7 @@ abstract class AbstractService
     /**
      * @var SoapClient O cliente SOAP configurado para o serviço específico.
      */
-    protected SoapClient $webService;
+    protected \SoapClient $webService;
 
     /**
      * Método auxiliar para chamar métodos do serviço web e tratar exceções.

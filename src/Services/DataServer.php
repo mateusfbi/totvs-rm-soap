@@ -18,7 +18,7 @@ use mateusfbi\TotvsRmSoap\Utils\Serialize;
  */
 class DataServer extends AbstractService
 {
-    private $webService;
+    protected SoapClient $webService;
     private string $dataServer;
     private string $primaryKey;
     private string $contexto;

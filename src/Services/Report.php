@@ -25,7 +25,7 @@ use \DOMDocument;
 
 class Report extends AbstractService
 {
-    private $webService;
+    protected \SoapClient $webService;
     private int $coligada;
     private int $id;
     private string $filtro;
