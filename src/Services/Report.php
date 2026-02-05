@@ -1,10 +1,10 @@
 <?php
 
-namespace mateusfbi\TotvsRmSoap\Services;
+namespace TotvsRmSoap\Services;
 
-use mateusfbi\TotvsRmSoap\Services\AbstractService;
+use TotvsRmSoap\Services\AbstractService;
 
-use mateusfbi\TotvsRmSoap\Connection\WebService;
+use TotvsRmSoap\Connection\WebService;
 use \DOMDocument;
 
 /**
@@ -20,7 +20,7 @@ use \DOMDocument;
  *   - Obter a lista de relatórios.
  *   - Obter status, metadados, informações, tamanho, hash e chunks do arquivo gerado.
  *
- * @package mateusfbi\TotvsRmSoap\Services
+ * @package TotvsRmSoap\Services
  */
 
 class Report extends AbstractService

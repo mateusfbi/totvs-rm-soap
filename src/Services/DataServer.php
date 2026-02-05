@@ -1,11 +1,11 @@
 <?php
 
-namespace mateusfbi\TotvsRmSoap\Services;
+namespace TotvsRmSoap\Services;
 
-use mateusfbi\TotvsRmSoap\Services\AbstractService;
+use TotvsRmSoap\Services\AbstractService;
 
-use mateusfbi\TotvsRmSoap\Connection\WebService;
-use mateusfbi\TotvsRmSoap\Utils\Serialize;
+use TotvsRmSoap\Connection\WebService;
+use TotvsRmSoap\Utils\Serialize;
 
 /**
  * Classe DataServer

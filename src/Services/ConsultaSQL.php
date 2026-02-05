@@ -1,11 +1,11 @@
 <?php
 
-namespace mateusfbi\TotvsRmSoap\Services;
+namespace TotvsRmSoap\Services;
 
-use mateusfbi\TotvsRmSoap\Services\AbstractService;
+use TotvsRmSoap\Services\AbstractService;
 
-use mateusfbi\TotvsRmSoap\Connection\WebService;
-use mateusfbi\TotvsRmSoap\Utils\Serialize;
+use TotvsRmSoap\Connection\WebService;
+use TotvsRmSoap\Utils\Serialize;
 
 /**
  * Classe ConsultaSQL
@@ -14,7 +14,7 @@ use mateusfbi\TotvsRmSoap\Utils\Serialize;
  * Essa classe prepara os parâmetros da consulta e invoca o serviço SOAP específico
  * para execução da sentença SQL, retornando o resultado processado.
  *
- * @package mateusfbi\TotvsRmSoap\Services
+ * @package TotvsRmSoap\Services
  */
 
 class ConsultaSQL extends AbstractService

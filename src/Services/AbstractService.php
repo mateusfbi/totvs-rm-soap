@@ -1,9 +1,6 @@
 <?php
 
-namespace mateusfbi\TotvsRmSoap\Services;
-
-
-
+namespace TotvsRmSoap\Services;
 
 /**
  * Classe Abstrata AbstractService
@@ -11,7 +8,7 @@ namespace mateusfbi\TotvsRmSoap\Services;
  * Fornece uma base comum para todas as classes de serviço SOAP, unificando
  * o cliente SOAP e o método auxiliar para chamadas de serviço web.
  *
- * @package mateusfbi\TotvsRmSoap\Services
+ * @package TotvsRmSoap\Services
  */
 abstract class AbstractService
 {

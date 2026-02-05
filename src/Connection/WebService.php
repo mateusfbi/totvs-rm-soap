@@ -1,6 +1,6 @@
 <?php
 
-namespace mateusfbi\TotvsRmSoap\Connection;
+namespace TotvsRmSoap\Connection;
 
 use \SoapClient;
 use Dotenv\Dotenv;
