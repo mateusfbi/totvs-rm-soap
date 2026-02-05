@@ -19,8 +19,7 @@ use mateusfbi\TotvsRmSoap\Utils\Serialize;
 
 class ConsultaSQL extends AbstractService
 {
-    protected SoapClient $webService;
-    private string $sentenca;
+    private string $codSentenca;
     private string $coligada;
     private string $sistema;
     private string $parametros;
@@ -42,12 +41,12 @@ class ConsultaSQL extends AbstractService
     /**
      * Define a sentença SQL para a consulta.
      *
-     * @param string $sentenca Sentença SQL a ser utilizada.
+     * @param string $codSentenca Código da Sentença SQL a ser utilizada.
      * @return void
      */
-    public function setSentenca(string $sentenca): void
+    public function setCodSentenca(string $codSentenca): void
     {
-        $this->sentenca = $sentenca;
+        $this->codSentenca = $codSentenca;
     }
 
     /**
@@ -109,7 +108,7 @@ class ConsultaSQL extends AbstractService
     public function RealizarConsultaSQL(): array
     {
         $params = [
-            'codSentenca' => $this->sentenca,
+            'codSentenca' => $this->codSentenca,
             'codColigada' => $this->coligada,
             'codSistema' => $this->sistema,
             'parameters' => empty($this->parametros) ? null : $this->parametros,

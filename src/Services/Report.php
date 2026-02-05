@@ -25,7 +25,6 @@ use \DOMDocument;
 
 class Report extends AbstractService
 {
-    protected \SoapClient $webService;
     private int $coligada;
     private int $id;
     private string $filtro;
@@ -446,7 +445,7 @@ class Report extends AbstractService
     public function getGeneratedReportStatus(): string
     {
         $params = [
-            'id'      => $this->id
+            'id'      => $this->guid
         ];
         return $this->callWebServiceMethod('GetGeneratedReportStatus', $params, '');
     }

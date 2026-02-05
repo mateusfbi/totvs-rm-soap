@@ -20,7 +20,6 @@ use mateusfbi\TotvsRmSoap\Connection\WebService;
  */
 class Process extends AbstractService
 {
-    protected \SoapClient $webService;
     private string $process;
     private string $xml;
     private string $jobId;

@@ -18,7 +18,6 @@ use mateusfbi\TotvsRmSoap\Utils\Serialize;
  */
 class DataServer extends AbstractService
 {
-    protected SoapClient $webService;
     private string $dataServer;
     private string $primaryKey;
     private string $contexto;
@@ -81,31 +80,93 @@ class DataServer extends AbstractService
         $this->filtro = $filtro;
     }
 
+
     /**
-     * Monta o XML da requisição do DataServer.
+     * Define diretamente o XML da requisição do DataServer.
+     *
+     * @param string $xml Conteúdo XML completo.
+     * @return string XML definido.
+     */
+    public function setXML(string $xml): string
+    {
+        return $this->xml = $xml;
+    }
+
+    /**
+     * Monta o XML da requisição do DataServer a partir de um array.
      *
      * Cria um documento XML com o nome da tabela informado e adiciona elementos para cada campo
-     * contido no array $data.
+     * contido no array $xmlArray.
      *
-     * @param string $table Nome da tabela ou elemento raíz do XML.
-     * @param array $data Array associativo contendo os dados (campo => valor).
+     * @param array $data Array associativo contendo os dados a serem convertidos em XML, estruturado com a chave 'root' para o elemento raiz e 'TABELA' para os dados.
      * @return void
      */
-    public function setXML(string $table, array $data): void
+    public function setXMLFromArray(array $xmlArray): void
     {
-        $dom = new \DOMDocument('1.0', 'utf-8');
-        $element = $dom->createElement($table);
-        $dom->appendChild($element);
+        if (empty($xmlArray['root'])) {
+            throw new \InvalidArgumentException('Root não informado');
+        }
 
-        foreach ($data as $key => $value) :
-            $append = $dom->createElement($key, $value);
-            $element->appendChild($append);
-        endforeach;
+        $dom = new \DOMDocument('1.0', 'utf-8');
+        $dom->formatOutput = true;
+
+        $root = $dom->createElement($xmlArray['root']);
+        $dom->appendChild($root);
+
+        if (!empty($xmlArray['TABELA']) && is_array($xmlArray['TABELA'])) {
+            $this->appendTabela($dom, $root, $xmlArray['TABELA']);
+        }
 
         $this->xml = $dom->saveXML();
     }
 
-    
+    /**
+     * Retorna o XML gerado pelo método setXML.
+     *
+     * @return string
+     */
+    public function getXML(): string
+    {
+        return $this->xml;
+    }
+
+    private function appendTabela(
+        \DOMDocument $dom,
+        \DOMElement $parent,
+        array $tabela
+    ): void {
+        foreach ($tabela as $tag => $conteudo) {
+
+            // Nó repetível
+            if (is_array($conteudo) && array_is_list($conteudo)) {
+                foreach ($conteudo as $item) {
+                    $node = $dom->createElement($tag);
+                    $this->appendCampos($dom, $node, $item);
+                    $parent->appendChild($node);
+                }
+                continue;
+            }
+
+            // Nó único
+            if (is_array($conteudo)) {
+                $node = $dom->createElement($tag);
+                $this->appendCampos($dom, $node, $conteudo);
+                $parent->appendChild($node);
+            }
+        }
+    }
+
+    private function appendCampos(
+        \DOMDocument $dom,
+        \DOMElement $parent,
+        array $campos
+    ): void {
+        foreach ($campos as $campo => $valor) {
+            $parent->appendChild(
+                $dom->createElement($campo, (string)$valor)
+            );
+        }
+    }
 
     /**
      * Persiste um registro no DataServer.

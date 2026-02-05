@@ -61,9 +61,10 @@ class WebService
             'password'              => $_ENV['WS_PASS'],
             'authentication'        => SOAP_AUTHENTICATION_BASIC,
             'soap_version'          => SOAP_1_1,
-            'trace'                 => 1,
-            'exceptions'            => 1, // Corrigido de 'excepitions' para 'exceptions' e definido como true
-            "stream_context" => stream_context_create(
+            'trace'                 => true,
+            'exceptions'            => true,
+            'connection_timeout'    => 30,
+            "stream_context" 	    => stream_context_create(
                 [
                     'ssl' => [
                         // ATENÇÃO: Em produção, é ALTAMENTE recomendado definir estas opções como true

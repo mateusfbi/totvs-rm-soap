@@ -17,7 +17,6 @@ use mateusfbi\TotvsRmSoap\Connection\WebService;
  */
 class FormulaVisual extends AbstractService
 {
-    protected SoapClient $webService;
     private string $idFormula;
     private string $coligada;
     private string $contexto;

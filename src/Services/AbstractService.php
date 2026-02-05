@@ -39,7 +39,7 @@ abstract class AbstractService
             $errorMessage = "Erro ao chamar o método SOAP '{$methodName}' na classe " . static::class . ": " . $e->getMessage();
             error_log($errorMessage);
             if ($defaultValue === null) {
-                throw new RuntimeException($errorMessage, 0, $e);
+                throw new \RuntimeException($errorMessage, 0, $e);
             }
             return $defaultValue;
         }
