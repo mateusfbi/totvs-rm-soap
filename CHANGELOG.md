@@ -3,6 +3,9 @@
 Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 
 ## [1.1.0] - 2026-02-05
+### Alterado
+- Namespace atualizado de `mateusfbi\TotvsRmSoap` para `TotvsRmSoap` (Breaking Change).
+
 ### Adicionado
 - Método `setXMLFromArray` em `DataServer` para facilitar a criação de XML a partir de arrays.
 - Método `getXML` em `DataServer` para visualizar o XML gerado.
